@@ -1,0 +1,9 @@
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+build/
+node_modules/
+.cache/
