@@ -1,0 +1,206 @@
+﻿@using TodoList.ViewModels
+@model TodoTasksViewModel
+
+@{
+    ViewData["Title"] = "Todo Tasks";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<div>
+    <form method="post" asp-controller="TodoTasks" asp-action="CreateTask">
+        <div class="mb-3">
+            <input type="text" name="Title" class="form-control mb-2" style="width: 100%;" />
+            <div class="d-flex gap-2">
+                <input type="date" name="DatePart" class="form-control" />
+                <input type="time" name="TimePart" class="form-control" />
+                <select name="categoryName" class="form-select">
+                    <option value="">No category</option>
+                    @foreach (var category in Model.Categories)
+                    {
+                        <option value="@category.Name">@category.Name</option>
+                    }
+                </select>
+                <input type="hidden" name="storage" value="@Model.SelectedStorage" />
+                <input type="hidden" name="filterCategory" value="@Model.SelectedCategory" />
+                <button type="submit" class="btn btn-primary">Create</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="d-flex">
+    <form method="get" asp-controller="TodoTasks" asp-action="Index" class="mb-3" id="categoryFilterForm">
+        <div class="d-flex gap-2 align-items-center">
+            <input type="hidden" name="storage" value="@Model.SelectedStorage" />
+            <select name="filterCategory" class="form-select" style="width:auto;" onchange="document.getElementById('categoryFilterForm').submit();">
+
+                @if (string.IsNullOrEmpty(Model.SelectedCategory))
+                {
+                    <option selected value="">All</option>
+                }
+                else
+                {
+                    <option value="">All</option>
+                }
+                @foreach (var category in Model.Categories)
+                {
+                    if (Model.SelectedCategory == category.Name)
+                    {
+                        <option selected value="@category.Name">@category.Name</option>
+                    }
+                    else
+                    {
+                        <option value="@category.Name">@category.Name</option>
+
+                    }
+                }
+            </select>
+        </div>
+    </form>
+
+    <form method="get" asp-controller="TodoTasks" asp-action="Index" class="justify-content-end d-flex align-items-center ms-auto" id="storageFilterForm">
+        <div class="d-flex gap-2 align-items-center">
+            <select name="storage" class="form-select" style="width:auto;" onchange="document.getElementById('storageFilterForm').submit();">
+                @if (Model.SelectedStorage == "Sql")
+                {
+                    <option value="Sql" selected>SQL</option>
+                    <option value="Xml">Xml</option>
+                }
+                else
+                {
+                    <option value="Sql">SQL</option>
+                    <option value="Xml" selected>Xml</option>
+                }
+            </select>
+        </div>
+    </form>
+</div>
+
+
+<div>
+    @if (Model != null && Model.TodoTasks.Count > 0)
+    {
+        List<TodoTask> activeTasks;
+        List<TodoTask> completedTasks;
+
+        void SetTasksLists()
+        {
+            activeTasks = Model.TodoTasks
+            .Where(t => !t.DateCompleted.HasValue)
+            .OrderBy(t => t.Id)
+            .ToList();
+
+            completedTasks = Model.TodoTasks
+            .Where(t => t.DateCompleted.HasValue)
+            .OrderByDescending(t => t.DateCompleted)
+            .ToList();
+        }
+
+        SetTasksLists();
+
+        @foreach (var task in activeTasks)
+        {
+            <div class="border p-3 mb-2 rounded d-flex">
+                <div class="justify-content-start flex-column align-items-center me-3 align-items-start">
+                    <span class="p2 fs-5 text-wrap text-break">@task.Title</span>
+                    <div class="justify-content-start d-flex flex-column align-items-start">
+                        <span class="p2 text-primary">
+                            @if (task.TaskDate.HasValue)
+                            {
+                                @task.TaskDate.Value.ToString("yy.MM.dd")
+                                if (task.TaskDate.Value.TimeOfDay != TimeSpan.Zero)
+                                {
+                                    <span class="ms-1">@task.TaskDate.Value.ToString("HH:mm")</span>
+                                }
+                            }
+                        </span>
+                    </div>
+                </div>
+
+                <div class="justify-content-end d-flex align-items-center ms-auto">
+                    <span class="p2 fs-5 text-wrap me-3">@task.CategoryName</span>
+
+                    <form method="post" asp-controller="TodoTasks" asp-action="DeleteTask">
+                        <input type="hidden" name="Id" value="@task.Id" />
+                        <input type="hidden" name="storage" value="@Model.SelectedStorage" />
+                        <button type="submit" class="btn btn-danger ms-3">
+                            <i class="bi bi-trash"></i>
+                        </button>
+
+
+                    </form>
+
+                    <form method="post" asp-controller="TodoTasks" asp-action="SwitchStatus">
+                        <input type="hidden" name="Id" value="@task.Id" />
+                        <input type="hidden" name="storage" value="@Model.SelectedStorage" />
+                        <button type="submit" class="btn btn-success ms-3">
+                            <i class="bi bi-check"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+
+        }
+
+        @if (completedTasks.Count != 0 && activeTasks.Count != 0)
+        {
+            <div class="border m-3 rounded d-flex">
+            </div>
+        }
+
+
+        @foreach (var task in completedTasks)
+        {
+            <div class="border p-3 mb-2 rounded d-flex" style="background-color: #fbfbfb">
+                <div class="justify-content-start flex-column align-items-center me-3 align-items-start">
+                    <span class="p2 fs-5 text-wrap text-break text-decoration-line-through">@task.Title</span>
+                    <div class="justify-content-start d-flex flex-column align-items-start">
+                        <span class="p2 text-primary">
+                            @if (task.TaskDate.HasValue)
+                            {
+                                @task.TaskDate.Value.ToString("yy.MM.dd")
+                                if (task.TaskDate.Value.TimeOfDay != TimeSpan.Zero)
+                                {
+                                    <span class="ms-1">@task.TaskDate.Value.ToString("HH:mm")</span>
+                                }
+                            }
+                        </span>
+                    </div>
+                </div>
+
+                <div class="justify-content-end d-flex align-items-center ms-auto">
+                    <span class="p2 fs-5 text-wrap me-3">@task.CategoryName</span>
+
+                    <form method="post" asp-controller="TodoTasks" asp-action="DeleteTask">
+                        <input type="hidden" name="Id" value="@task.Id" />
+                        <button type="submit" class="btn btn-danger ms-3">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                        <input type="hidden" name="storage" value="@Model.SelectedStorage" />
+                        <input type="hidden" name="storage" value="@Model.SelectedStorage" />
+                        <input type="hidden" name="filterCategory" value="@Model.SelectedCategory" />
+
+                    </form>
+
+                    <form method="post" asp-controller="TodoTasks" asp-action="SwitchStatus">
+                        <input type="hidden" name="Id" value="@task.Id" />
+                        <button type="submit" class="btn btn-secondary ms-3">
+                            <i class="bi bi-check"></i>
+                        </button>
+                        <input type="hidden" name="storage" value="@Model.SelectedStorage" />
+                        <input type="hidden" name="storage" value="@Model.SelectedStorage" />
+                        <input type="hidden" name="filterCategory" value="@Model.SelectedCategory" />
+                    </form>
+                </div>
+            </div>
+
+
+        }
+    }
+    else
+    {
+        <p>No tasks available.</p>
+    }
+</div>
