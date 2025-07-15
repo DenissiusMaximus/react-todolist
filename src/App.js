@@ -2,8 +2,10 @@ import './App.css';
 import {useState} from "react";
 import {useDispatch, useSelector} from "react-redux";
 
-class Task {
-    constructor(title, date, time, category, id)
+
+
+export class Task {
+    constructor(title, date, time, category, id = 0)
     {
         this.id = id;
         this.title = title;
@@ -11,16 +13,6 @@ class Task {
         this.time = time;
         this.category = category;
         this.dateCompleted = null;
-    }
-
-    setCompleted() {
-        if (this.dateCompleted === null) {
-            this.dateCompleted = Date.now();
-        } else {
-            this.dateCompleted = null;
-        }
-
-        console.log(this.title, this.dateCompleted)
     }
 
     validate() {
@@ -31,40 +23,33 @@ class Task {
     }
 }
 
+const addTask = (newTask) => ({ type : 'ADD_TASK', payload: newTask });
+const deleteTask = (id) => ({ type : 'DELETE_TASK', payload: { id } });
+const setTaskCompleted = (id) => ({ type : 'SET_TASK_COMPLETED', payload: { id } });
+
 export default function App() {
-    const [tasks, setTasks] = useState([]);
-    const [id, setId] = useState(0);
+    const dispatch = useDispatch();
+    const tasks = useSelector((state) => state.tasks);
 
     return (<div className="m-20 mt-16">
-        <CreateTaskForm onCreate={OnCreate}/>
-        <TaskList tasks={tasks} setTasks={setTasks}/>
+        <CreateTaskForm />
+        <TaskList />
     </div>)
-
-
-    function OnCreate(title, date, time, category) {
-        console.log(title, date, time, category);
-        const newTask = new Task(title, date, time, category, id);
-        if (!newTask.validate()) {
-            console.error('Invalid task');
-            return;
-        }
-        setId(id + 1);
-        setTasks([...tasks, newTask]);
-        console.log(tasks);
-    }
 }
 
 
-function CreateTaskForm({onCreate}) {
+function CreateTaskForm() {
     const [title, setTitle] = useState('');
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
     const [category, setCategory] = useState('');
 
+    const dispatch = useDispatch();
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        onCreate(title, date, time, category);
 
+        dispatch(addTask(new Task(title, date, time, category)));
     }
 
     return (<>
@@ -164,23 +149,18 @@ function SingleTask({task, onDelete, onCompleted}) {
     </>)
 }
 
-function TaskList({tasks, setTasks}) {
-    const safeTasks = Array.isArray(tasks) ? tasks : [];
+function TaskList() {
     const [category, setCategory] = useState('');
 
+    const tasks = useSelector((state) => state.tasks);
+    const dispatch = useDispatch();
+
     function onDelete(id) {
-        const newTasks = safeTasks.filter(task => task.id !== id);
-        setTasks(newTasks);
+        dispatch(deleteTask(id));
     }
 
     function onComplete(id) {
-        const newTasks = tasks.map(task => {
-            if (task.id === id) {
-                task.setCompleted();
-            }
-            return task;
-        });
-        setTasks(newTasks);
+        dispatch(setTaskCompleted(id));
     }
 
     const completedTasks = tasks.filter(task => task.dateCompleted !== null).sort((a, b) => b.dateCompleted - a.dateCompleted).filter(task => category !== ''? task.category === category : true);
