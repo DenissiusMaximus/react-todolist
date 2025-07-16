@@ -7,3 +7,7 @@
 build/
 node_modules/
 .cache/
+
+package-lock.json
+package.json
+tailwind.config.js
