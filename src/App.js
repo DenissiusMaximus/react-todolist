@@ -1,7 +1,7 @@
 import './App.css';
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {useDispatch, useSelector} from "react-redux";
-
+import {fetchTodos, fetchCategories, addTodo, deleteTodo, toggleTodo} from "./store/actions";
 
 export class Task {
     constructor(title, date, time, category, id = 0) {
@@ -10,22 +10,17 @@ export class Task {
         this.date = date;
         this.time = time;
         this.category = category;
-        this.dateCompleted = null;
-    }
-
-    validate() {
-        if (!this.title || typeof this.title !== 'string') {
-            return false;
-        }
-        return this.title.trim().length > 0;
+        this.dateCompleted = null; 
     }
 }
 
-const addTask = (newTask) => ({type: 'ADD_TASK', payload: newTask});
-const deleteTask = (id) => ({type: 'DELETE_TASK', payload: {id}});
-const setTaskCompleted = (id) => ({type: 'SET_TASK_COMPLETED', payload: {id}});
-
 export default function App() {
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        dispatch(fetchTodos());
+        dispatch(fetchCategories());
+    }, [dispatch]);
 
     return (<div className="m-2 sm:m-4 md:m-8 lg:m-16 xl:m-24 mt-16">
         <CreateTaskForm/>
@@ -41,12 +36,12 @@ function CreateTaskForm() {
     const [category, setCategory] = useState('');
 
     const dispatch = useDispatch();
-    const categories = useSelector((state) => state.categories);
+    const categories = useSelector(state => state.categories.categories);
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        dispatch(addTask(new Task(title, date, time, category)));
+        dispatch(addTodo({title, date, time, category}));
     }
 
     return (<>
@@ -75,7 +70,7 @@ function CreateTaskForm() {
                         className="flex-1 flex border rounded p-2 border-gray-200 bg-transparent">
                         <option value="">No category</option>
                         {categories.map((category, index) => (
-                            <option value={category}>{category}</option>
+                            <option key={index} value={category}>{category}</option>
                         ))}
                     </select>
                 </div>
@@ -109,7 +104,10 @@ function SingleTask({task}) {
             <div className="justify-end flex me-3 items-center ms-auto">
                 <span className="p-2 text-lg text-wrap me-3">{task.category}</span>
 
-                <button className="bg-red-600 ms-3 rounded p-1" onClick={() => dispatch(deleteTask(task.id))}>
+                <button className="bg-red-600 ms-3 rounded p-1" onClick={
+                    () =>
+                    dispatch(deleteTodo(task.id))
+                }>
                     <svg
                         className="opacity-95 text-white"
                         width="24"
@@ -128,7 +126,9 @@ function SingleTask({task}) {
                     </svg>
                 </button>
 
-                <button className={buttonColor} onClick={() => dispatch(setTaskCompleted(task.id))}>
+                <button className={buttonColor} onClick={() =>
+                    dispatch(toggleTodo(task.id))
+                }>
                     <svg
                         className="opacity-95 text-white"
                         width="24"
@@ -152,11 +152,17 @@ function SingleTask({task}) {
 function TaskList() {
     const [category, setCategory] = useState('');
 
-    const tasks = useSelector((state) => state.tasks);
-    const categories = useSelector((state) => state.categories);
+    const dispatch = useDispatch();
 
-    const completedTasks = tasks.filter(task => task.dateCompleted !== null).sort((a, b) => b.dateCompleted - a.dateCompleted).filter(task => category !== '' ? task.category === category : true);
-    const unCompletedTasks = tasks.filter(task => task.dateCompleted === null).filter(task => category !== '' ? task.category === category : true);
+    const categories = useSelector(state => state.categories.categories);
+    const tasks = useSelector(state => state.todos.todos || []);
+
+    const completedTasks = tasks?.filter(task => task.dateCompleted !== null)
+        .sort((a, b) => b.dateCompleted - a.dateCompleted)
+        .filter(task => category !== '' ? task.category === category : true) || [];
+
+    const unCompletedTasks = tasks?.filter(task => task.dateCompleted === null)
+        .filter(task => category !== '' ? task.category === category : true) || [];
 
 
     return (<>
@@ -165,7 +171,7 @@ function TaskList() {
             name="categoryName"
             className="flex-1 flex border rounded p-2 border-gray-200 bg-transparent mb-2">
             <option value="">No category</option>
-            {categories.map((category, index) => (
+            {categories.map((category) => (
                 <option value={category}>{category}</option>
             ))}
         </select>
